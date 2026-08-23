@@ -1301,8 +1301,8 @@ html {
   align-items: center;
   justify-content: center;
   text-align: center;
-  transition: transform 0.6s cubic-bezier(0.25, 1, 0.5, 1);
-  transition-delay: 1s;
+  transition: transform 0.6s cubic-bezier(0.25, 1, 0.5, 1), opacity 0.3s ease;
+  transition-delay: 1s, 0s;
   width: 100%;
 }
 
@@ -1311,12 +1311,18 @@ html {
   transform: translateX(-45px);
 }
 
+.service-card.in-call .receptionist-intro {
+  display: none !important;
+  opacity: 0 !important;
+  pointer-events: none !important;
+}
+
 .receptionist-details h4 {
   font-family: 'Outfit', sans-serif;
   color: var(--text-primary);
   font-size: 2.2rem;
   font-weight: 700;
-  margin-bottom: 6px;
+  margin-bottom: 4px;
   line-height: 1.1;
 }
 
@@ -1326,6 +1332,17 @@ html {
   font-weight: 600;
   letter-spacing: 0.1em;
   text-transform: uppercase;
+}
+
+.receptionist-subtext {
+  display: block;
+  font-size: 0.72rem;
+  color: var(--text-muted);
+  text-transform: uppercase;
+  letter-spacing: 0.08em;
+  margin-top: 6px;
+  font-weight: 500;
+  opacity: 0.9;
 }
 
 .receptionist-link-btn {
@@ -1340,15 +1357,24 @@ html {
   position: absolute;
   right: 24px;
   opacity: 0;
-  overflow: hidden;
+  overflow: visible;
+  cursor: pointer;
   transform: scale(0) rotate(-90deg);
   transition: opacity 0.3s ease, transform 0.4s cubic-bezier(0.25, 0.8, 0.25, 1), border-color 0.25s ease, box-shadow 0.25s ease;
   transition-delay: 1.3s;
+  z-index: 5;
+  padding: 0;
 }
 
 .service-card.active .receptionist-link-btn {
   opacity: 1;
   transform: scale(1) rotate(0deg);
+}
+
+.service-card.in-call .receptionist-link-btn {
+  display: none !important;
+  opacity: 0 !important;
+  pointer-events: none !important;
 }
 
 .receptionist-avatar-icon {
@@ -1359,6 +1385,33 @@ html {
   padding: 6px;
   background: var(--bg-dark);
   transition: transform 0.3s ease;
+  z-index: 2;
+  position: relative;
+}
+
+.receptionist-pulse-ring {
+  position: absolute;
+  inset: -6px;
+  border-radius: 50%;
+  border: 1px solid var(--accent);
+  opacity: 0;
+  pointer-events: none;
+  animation: radarPulse 2.4s ease-out infinite;
+}
+
+@keyframes radarPulse {
+  0% {
+    transform: scale(0.9);
+    opacity: 0.8;
+  }
+  70% {
+    transform: scale(1.4);
+    opacity: 0;
+  }
+  100% {
+    transform: scale(1.4);
+    opacity: 0;
+  }
 }
 
 .receptionist-link-btn:hover {
@@ -1368,8 +1421,269 @@ html {
 }
 
 .receptionist-link-btn:hover .receptionist-avatar-icon {
-  transform: scale(1.1);
+  transform: scale(1.08);
   transition-delay: 0s !important;
+}
+
+/* ====================================================================
+   IN-CARD LIVE VOICE CALL PANEL
+   ==================================================================== */
+.receptionist-call-panel {
+  display: none;
+  opacity: 0;
+  pointer-events: none;
+  width: 100%;
+  height: 100%;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  gap: 12px;
+  transform: scale(0.92);
+  transition: all 0.35s cubic-bezier(0.25, 1, 0.5, 1);
+  background: rgba(22, 22, 25, 0.95);
+  border: 1px solid rgba(212, 148, 58, 0.25);
+  border-radius: var(--radius-md);
+  padding: 16px 20px;
+  box-shadow: 0 10px 30px rgba(0, 0, 0, 0.6), 0 0 20px rgba(212, 148, 58, 0.12);
+  backdrop-filter: blur(12px);
+  z-index: 20;
+}
+
+.service-card.in-call .receptionist-call-panel {
+  display: flex;
+  opacity: 1;
+  pointer-events: auto;
+  transform: scale(1);
+}
+
+.call-top-row {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 12px;
+  width: 100%;
+}
+
+.call-avatar-wrap {
+  position: relative;
+  width: 48px;
+  height: 48px;
+  border-radius: 50%;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  flex-shrink: 0;
+}
+
+.call-avatar-img {
+  width: 100%;
+  height: 100%;
+  object-fit: contain;
+  border-radius: 50%;
+  background: var(--bg-dark);
+  border: 2px solid var(--accent);
+  padding: 4px;
+  z-index: 2;
+  position: relative;
+  box-shadow: 0 0 12px var(--accent-glow);
+}
+
+.call-pulse-ring {
+  position: absolute;
+  inset: -4px;
+  border-radius: 50%;
+  border: 1.5px solid var(--accent);
+  opacity: 0;
+  pointer-events: none;
+  animation: callRingPulse 2s cubic-bezier(0.25, 1, 0.5, 1) infinite;
+}
+
+.call-pulse-ring.ring-2 {
+  animation-delay: 0.8s;
+}
+
+@keyframes callRingPulse {
+  0% {
+    transform: scale(0.95);
+    opacity: 0.8;
+  }
+  100% {
+    transform: scale(1.6);
+    opacity: 0;
+  }
+}
+
+.call-info {
+  display: flex;
+  flex-direction: column;
+  align-items: flex-start;
+  gap: 3px;
+}
+
+.call-name {
+  font-family: 'Outfit', sans-serif;
+  font-size: 1.25rem;
+  font-weight: 700;
+  color: var(--text-primary);
+  line-height: 1.1;
+}
+
+.call-status {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  padding: 3px 10px;
+  border-radius: 20px;
+  font-size: 0.72rem;
+  font-weight: 600;
+  letter-spacing: 0.04em;
+  text-transform: uppercase;
+  background: rgba(212, 148, 58, 0.15);
+  border: 1px solid rgba(212, 148, 58, 0.35);
+  color: var(--accent-light);
+  transition: all 0.3s ease;
+}
+
+.call-status.live {
+  background: rgba(46, 213, 115, 0.15);
+  border-color: rgba(46, 213, 115, 0.4);
+  color: #2ed573;
+}
+
+.call-status.error {
+  background: rgba(255, 71, 87, 0.15);
+  border-color: rgba(255, 71, 87, 0.4);
+  color: #ff4757;
+}
+
+.status-pulse-dot {
+  width: 6px;
+  height: 6px;
+  border-radius: 50%;
+  background: currentColor;
+  display: inline-block;
+  animation: dotPulse 1.2s ease-in-out infinite;
+}
+
+@keyframes dotPulse {
+  0%, 100% {
+    opacity: 1;
+    transform: scale(1);
+  }
+  50% {
+    opacity: 0.3;
+    transform: scale(0.7);
+  }
+}
+
+/* Dynamic Equalizer Soundwave */
+.call-soundwave {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 4px;
+  height: 28px;
+  width: 100%;
+}
+
+.wave-bar {
+  width: 3.5px;
+  height: 6px;
+  border-radius: 4px;
+  background: linear-gradient(180deg, var(--accent-light), var(--accent));
+  transition: height 0.08s ease, opacity 0.2s ease;
+  opacity: 0.5;
+}
+
+.service-card.in-call .wave-bar {
+  opacity: 0.85;
+}
+
+.service-card.assistant-speaking .wave-bar {
+  opacity: 1;
+  background: linear-gradient(180deg, #fffa65, var(--accent-light));
+  box-shadow: 0 0 8px rgba(232, 174, 80, 0.6);
+}
+
+.call-caption {
+  font-size: 0.78rem;
+  color: var(--text-secondary);
+  text-align: center;
+  max-width: 95%;
+  line-height: 1.3;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+  font-style: italic;
+  min-height: 18px;
+  opacity: 0.9;
+}
+
+/* Call Control Buttons (Mute & Decline) */
+.call-controls {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 12px;
+  margin-top: 2px;
+}
+
+.call-btn-mute {
+  width: 34px;
+  height: 34px;
+  border-radius: 50%;
+  border: 1px solid var(--border);
+  background: var(--bg-tertiary);
+  color: var(--text-secondary);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  cursor: pointer;
+  transition: all 0.2s ease;
+  padding: 0;
+}
+
+.call-btn-mute:hover {
+  border-color: var(--accent);
+  color: #fff;
+  background: rgba(212, 148, 58, 0.15);
+  transform: scale(1.08);
+}
+
+.call-btn-mute.muted {
+  background: rgba(255, 71, 87, 0.15);
+  border-color: rgba(255, 71, 87, 0.4);
+  color: #ff4757;
+}
+
+.call-btn-decline {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 6px;
+  padding: 7px 18px;
+  border-radius: 24px;
+  background: linear-gradient(135deg, #e53935 0%, #c62828 100%);
+  color: #ffffff;
+  font-family: 'Inter', sans-serif;
+  font-size: 0.78rem;
+  font-weight: 600;
+  letter-spacing: 0.05em;
+  text-transform: uppercase;
+  border: 1px solid rgba(255, 255, 255, 0.15);
+  cursor: pointer;
+  box-shadow: 0 4px 14px rgba(229, 57, 53, 0.4);
+  transition: all 0.2s cubic-bezier(0.25, 0.46, 0.45, 0.94);
+}
+
+.call-btn-decline:hover {
+  transform: scale(1.05);
+  background: linear-gradient(135deg, #ef5350 0%, #d32f2f 100%);
+  box-shadow: 0 6px 20px rgba(229, 57, 53, 0.65), 0 0 12px rgba(229, 57, 53, 0.4);
+}
+
+.call-btn-decline:active {
+  transform: scale(0.96);
 }
 
 /* ------------------------------------------
