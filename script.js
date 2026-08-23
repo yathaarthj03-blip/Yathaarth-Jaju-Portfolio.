@@ -223,12 +223,17 @@ document.addEventListener('DOMContentLoaded', () => {
       });
 
       card.addEventListener('click', (e) => {
-        if (e.target.closest('.work-popup-item')) {
+        if (e.target.closest('.work-popup-item') || e.target.closest('.receptionist-popup')) {
           e.stopPropagation();
           return;
         }
         const isCurrentlyActive = card.classList.contains('active');
-        serviceCards.forEach(c => c.classList.remove('active'));
+        serviceCards.forEach(c => {
+          c.classList.remove('active');
+          if (c.id === 'serviceCardAI' && isCurrentlyActive) {
+            declineKabirCall();
+          }
+        });
         if (!isCurrentlyActive) {
           card.classList.add('active');
         }
@@ -237,7 +242,270 @@ document.addEventListener('DOMContentLoaded', () => {
     });
 
     document.addEventListener('click', () => {
+      declineKabirCall();
       serviceCards.forEach(card => card.classList.remove('active'));
+    });
+  }
+
+  /* ====================================================================
+     7B. IN-CARD AI VOICE RECEPTIONIST (KABIR) - VAPI INTEGRATION
+     Enables direct in-card voice conversations with Kabir without
+     redirecting users to any external platforms.
+  ==================================================================== */
+  const VAPI_PUBLIC_KEY = 'ee732914-a9da-4994-a09b-37e53f8ecef9';
+  const KABIR_ASSISTANT_ID = '2b2067ce-750d-4493-95d1-9eecf279ca6e';
+
+  let vapiClient = null;
+  let isCallConnecting = false;
+  let isCallLive = false;
+  let isMuted = false;
+  let visualizerInterval = null;
+
+  const serviceCardAI = document.getElementById('serviceCardAI');
+  const triggerBtn = document.getElementById('receptionistTriggerBtn');
+  const declineBtn = document.getElementById('callDeclineBtn');
+  const muteBtn = document.getElementById('callMuteBtn');
+  const statusEl = document.getElementById('callStatus');
+  const statusLabelEl = document.getElementById('callStatusLabel');
+  const captionEl = document.getElementById('callCaption');
+  const waveBars = document.querySelectorAll('#callSoundwave .wave-bar');
+
+  // Lazy-load Vapi SDK on demand
+  async function getVapi() {
+    if (!vapiClient) {
+      try {
+        const { default: Vapi } = await import('https://esm.sh/@vapi-ai/web');
+        vapiClient = new Vapi(VAPI_PUBLIC_KEY);
+        setupVapiListeners(vapiClient);
+      } catch (err) {
+        console.error('Error loading Vapi SDK:', err);
+        throw err;
+      }
+    }
+    return vapiClient;
+  }
+
+  function setupVapiListeners(vapi) {
+    vapi.on('call-start', () => {
+      isCallConnecting = false;
+      isCallLive = true;
+      if (statusEl) {
+        statusEl.className = 'call-status live';
+      }
+      if (statusLabelEl) {
+        statusLabelEl.textContent = 'Live Call';
+      }
+      if (captionEl) {
+        captionEl.textContent = 'Say hello to Kabir...';
+      }
+      startIdleVisualizer();
+    });
+
+    vapi.on('call-end', () => {
+      resetCallState();
+    });
+
+    vapi.on('speech-start', () => {
+      if (serviceCardAI) {
+        serviceCardAI.classList.add('assistant-speaking');
+      }
+      if (captionEl) {
+        captionEl.textContent = 'Kabir is speaking...';
+      }
+    });
+
+    vapi.on('speech-end', () => {
+      if (serviceCardAI) {
+        serviceCardAI.classList.remove('assistant-speaking');
+      }
+      if (captionEl) {
+        captionEl.textContent = 'Listening to you...';
+      }
+    });
+
+    vapi.on('volume-level', (volume) => {
+      renderVolumeWaves(volume);
+    });
+
+    vapi.on('message', (message) => {
+      if (message && message.type === 'transcript' && message.transcript) {
+        if (message.role === 'assistant') {
+          if (captionEl) {
+            captionEl.textContent = message.transcript;
+          }
+        }
+      }
+    });
+
+    vapi.on('error', (err) => {
+      console.warn('Vapi session notice:', err);
+      if (statusEl) {
+        statusEl.className = 'call-status error';
+      }
+      if (statusLabelEl) {
+        statusLabelEl.textContent = 'Call Notice';
+      }
+      if (captionEl) {
+        captionEl.textContent = err?.message || 'Call disconnected';
+      }
+      setTimeout(() => {
+        resetCallState();
+      }, 2000);
+    });
+  }
+
+  function startIdleVisualizer() {
+    if (visualizerInterval) clearInterval(visualizerInterval);
+    visualizerInterval = setInterval(() => {
+      if (!isCallLive) {
+        clearInterval(visualizerInterval);
+        return;
+      }
+      if (!serviceCardAI?.classList.contains('assistant-speaking')) {
+        waveBars.forEach((bar, i) => {
+          const baseHeight = 4;
+          const wave = Math.sin(Date.now() / 250 + i * 0.7) * 4 + 6;
+          bar.style.height = `${Math.max(baseHeight, Math.round(wave))}px`;
+        });
+      }
+    }, 60);
+  }
+
+  function renderVolumeWaves(volume) {
+    if (!isCallLive) return;
+    const vol = Math.min(Math.max(volume || 0, 0), 1);
+    waveBars.forEach((bar, idx) => {
+      const centerDist = Math.abs(idx - (waveBars.length - 1) / 2);
+      const centerMultiplier = 1 - (centerDist / waveBars.length) * 0.6;
+      const waveNoise = Math.sin(Date.now() / 100 + idx) * 0.2 + 0.8;
+      const minH = 4;
+      const maxH = 26;
+      const computedH = minH + (maxH - minH) * (vol * 0.8 + 0.2) * centerMultiplier * waveNoise;
+      bar.style.height = `${Math.min(maxH, Math.max(minH, Math.round(computedH)))}px`;
+    });
+  }
+
+  async function startKabirCall() {
+    if (isCallConnecting || isCallLive) return;
+
+    try {
+      isCallConnecting = true;
+      if (serviceCardAI) {
+        serviceCardAI.classList.add('in-call');
+      }
+      if (statusEl) {
+        statusEl.className = 'call-status';
+      }
+      if (statusLabelEl) {
+        statusLabelEl.textContent = 'Connecting...';
+      }
+      if (captionEl) {
+        captionEl.textContent = 'Initializing AI Receptionist...';
+      }
+
+      const vapi = await getVapi();
+      await vapi.start(KABIR_ASSISTANT_ID);
+    } catch (error) {
+      console.error('Failed to initiate call:', error);
+      if (statusEl) {
+        statusEl.className = 'call-status error';
+      }
+      if (statusLabelEl) {
+        statusLabelEl.textContent = 'Connection Error';
+      }
+      if (captionEl) {
+        captionEl.textContent = error?.message || 'Microphone access needed';
+      }
+      setTimeout(() => {
+        resetCallState();
+      }, 2500);
+    }
+  }
+
+  function declineKabirCall() {
+    if (vapiClient) {
+      try {
+        vapiClient.stop();
+      } catch (e) {
+        console.warn('Error ending call:', e);
+      }
+    }
+    resetCallState();
+  }
+
+  function resetCallState() {
+    isCallConnecting = false;
+    isCallLive = false;
+    isMuted = false;
+    if (visualizerInterval) {
+      clearInterval(visualizerInterval);
+      visualizerInterval = null;
+    }
+
+    if (serviceCardAI) {
+      serviceCardAI.classList.remove('in-call', 'assistant-speaking');
+    }
+    if (statusEl) {
+      statusEl.className = 'call-status';
+    }
+    if (statusLabelEl) {
+      statusLabelEl.textContent = 'Connecting...';
+    }
+    if (captionEl) {
+      captionEl.textContent = 'Say hello to Kabir...';
+    }
+
+    waveBars.forEach((bar) => {
+      bar.style.height = '6px';
+    });
+
+    if (muteBtn) {
+      muteBtn.classList.remove('muted');
+      const micOn = muteBtn.querySelector('.mic-on');
+      const micOff = muteBtn.querySelector('.mic-off');
+      if (micOn) micOn.style.display = 'block';
+      if (micOff) micOff.style.display = 'none';
+      muteBtn.title = 'Mute / Unmute Microphone';
+    }
+  }
+
+  function toggleMute() {
+    if (!vapiClient || !isCallLive) return;
+    isMuted = !isMuted;
+    try {
+      vapiClient.setMuted(isMuted);
+    } catch (e) {
+      console.warn('Mute toggle error:', e);
+    }
+
+    if (muteBtn) {
+      muteBtn.classList.toggle('muted', isMuted);
+      const micOn = muteBtn.querySelector('.mic-on');
+      const micOff = muteBtn.querySelector('.mic-off');
+      if (micOn) micOn.style.display = isMuted ? 'none' : 'block';
+      if (micOff) micOff.style.display = isMuted ? 'block' : 'none';
+      muteBtn.title = isMuted ? 'Unmute Microphone' : 'Mute Microphone';
+    }
+  }
+
+  if (triggerBtn) {
+    triggerBtn.addEventListener('click', (e) => {
+      e.stopPropagation();
+      startKabirCall();
+    });
+  }
+
+  if (declineBtn) {
+    declineBtn.addEventListener('click', (e) => {
+      e.stopPropagation();
+      declineKabirCall();
+    });
+  }
+
+  if (muteBtn) {
+    muteBtn.addEventListener('click', (e) => {
+      e.stopPropagation();
+      toggleMute();
     });
   }
 
