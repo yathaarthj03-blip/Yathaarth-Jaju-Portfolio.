@@ -431,23 +431,88 @@
         </div>
 
         <!-- Card 2 -->
-        <div class="service-card reveal">
+        <div class="service-card reveal" id="serviceCardAI">
           <button class="card-expand-btn" aria-label="Toggle details">
             <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round">
               <line x1="5" y1="12" x2="19" y2="12"></line>
               <polyline points="12 5 19 12 12 19"></polyline>
             </svg>
           </button>
-          <div class="receptionist-popup">
-            <div class="receptionist-intro">
+          <div class="receptionist-popup" id="receptionistPopup">
+            <!-- Idle / Intro State -->
+            <div class="receptionist-intro" id="receptionistIntro">
               <div class="receptionist-details">
                 <h4>Kabir</h4>
                 <p>AI Receptionist</p>
+                <span class="receptionist-subtext">Click robot to speak</span>
               </div>
             </div>
-            <a href="https://vapi.ai/?demo=true&shareKey=ee732914-a9da-4994-a09b-37e53f8ecef9&assistantId=2b2067ce-750d-4493-95d1-9eecf279ca6e" target="_blank" class="receptionist-link-btn" title="Launch Demo">
+            
+            <button type="button" class="receptionist-link-btn" id="receptionistTriggerBtn" title="Speak with Kabir (AI Receptionist)" aria-label="Start Voice Call with Kabir">
               <img src="assets/receptionist.png" alt="Kabir Logo" class="receptionist-avatar-icon" />
-            </a>
+              <span class="receptionist-pulse-ring"></span>
+            </button>
+
+            <!-- In-Card Voice Call Live Interface -->
+            <div class="receptionist-call-panel" id="receptionistCallPanel">
+              <div class="call-top-row">
+                <div class="call-avatar-wrap">
+                  <div class="call-pulse-ring ring-1"></div>
+                  <div class="call-pulse-ring ring-2"></div>
+                  <img src="assets/receptionist.png" alt="Kabir Avatar" class="call-avatar-img" />
+                </div>
+                <div class="call-info">
+                  <h4 class="call-name">Kabir</h4>
+                  <div class="call-status" id="callStatus">
+                    <span class="status-pulse-dot"></span>
+                    <span class="status-label" id="callStatusLabel">Connecting...</span>
+                  </div>
+                </div>
+              </div>
+
+              <!-- Animated Equalizer Soundwave Bars -->
+              <div class="call-soundwave" id="callSoundwave">
+                <span class="wave-bar"></span>
+                <span class="wave-bar"></span>
+                <span class="wave-bar"></span>
+                <span class="wave-bar"></span>
+                <span class="wave-bar"></span>
+                <span class="wave-bar"></span>
+                <span class="wave-bar"></span>
+                <span class="wave-bar"></span>
+                <span class="wave-bar"></span>
+              </div>
+
+              <!-- Live Caption / Speech Feedback -->
+              <div class="call-caption" id="callCaption">Say hello to Kabir...</div>
+
+              <!-- Call Controls (Mute & Decline) -->
+              <div class="call-controls">
+                <button type="button" class="call-btn-mute" id="callMuteBtn" title="Mute / Unmute Microphone" aria-label="Toggle Mute">
+                  <svg class="mic-on" width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                    <path d="M12 1a3 3 0 0 0-3 3v8a3 3 0 0 0 6 0V4a3 3 0 0 0-3-3z"></path>
+                    <path d="M19 10v2a7 7 0 0 1-14 0v-2"></path>
+                    <line x1="12" y1="19" x2="12" y2="23"></line>
+                    <line x1="8" y1="23" x2="16" y2="23"></line>
+                  </svg>
+                  <svg class="mic-off" width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" style="display:none;">
+                    <line x1="1" y1="1" x2="23" y2="23"></line>
+                    <path d="M9 9v3a3 3 0 0 0 5.12 2.12M15 9.34V4a3 3 0 0 0-5.94-.6"></path>
+                    <path d="M17 16.95A7 7 0 0 1 5 12v-2m14 0v2a7 7 0 0 1-.11 1.23"></path>
+                    <line x1="12" y1="19" x2="12" y2="23"></line>
+                    <line x1="8" y1="23" x2="16" y2="23"></line>
+                  </svg>
+                </button>
+
+                <button type="button" class="call-btn-decline" id="callDeclineBtn" title="Decline / End Call" aria-label="Decline Call">
+                  <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round">
+                    <path d="M10.68 13.31a16 16 0 0 0 3.41 2.6l1.27-1.27a2 2 0 0 1 2.11-.45 12.84 12.84 0 0 0 2.81.7 2 2 0 0 1 1.72 2v3a2 2 0 0 1-2.18 2 19.79 19.79 0 0 1-8.63-3.07 19.42 19.42 0 0 1-3.33-2.67m-2.67-3.34a19.79 19.79 0 0 1-3.07-8.63A2 2 0 0 1 4.11 2h3a2 2 0 0 1 2 1.72 12.84 12.84 0 0 0 .7 2.81 2 2 0 0 1-.45 2.11L8.09 9.91"></path>
+                    <line x1="23" y1="1" x2="1" y2="23"></line>
+                  </svg>
+                  <span>Decline</span>
+                </button>
+              </div>
+            </div>
           </div>
           <div class="card-content-wrap">
             <span class="service-number">02</span>
